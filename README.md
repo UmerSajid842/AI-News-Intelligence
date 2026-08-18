@@ -135,7 +135,9 @@ Available routes include `GET /`, `GET /api/articles/`, `GET /api/articles/{arti
 
 ## Optional live mode
 
-Live ingestion is deliberately separate from the default demo path. Configure the following values in `.env`:
+Live ingestion is deliberately separate from the default demo path. It is strictly opt-in: the API accepts only `NEWS_MODE=demo` or `NEWS_MODE=live`, and live mode refuses to start without a provider key and an HTTP(S) provider URL. It never silently falls back to synthetic fixtures when live mode is selected.
+
+Configure the following values in `.env`:
 
 ```dotenv
 NEWS_MODE=live
@@ -150,7 +152,9 @@ Then start Redis and the Celery worker. With Docker Compose, use:
 docker compose up --build
 ```
 
-This starts Redis, the FastAPI service on port 8000, the Streamlit dashboard on port 8501, and the Celery worker. Use live mode only when a valid provider key and the required service capacity are available.
+This starts Redis, the FastAPI service on port 8000, the Streamlit dashboard on port 8501, and the Celery worker. Use live mode only when a valid provider key and the required service capacity are available. The provider key is sent only as an outbound request parameter and is never returned in API responses or logs.
+
+The live worker validates the provider response, uses a bounded request timeout, normalizes ISO-8601 publication timestamps to UTC, ignores malformed records, prevents duplicate URLs, commits inserts before queueing classification, and reports provider failures without exposing credentials.
 
 ## Tests and validation
 
@@ -161,17 +165,17 @@ python -m compileall -q backend dashboard tests
 pytest -q
 ```
 
-The suite covers article listing and detail retrieval, duplicate URL protection, deterministic classification, successful and failed authentication, unauthenticated route rejection, and authenticated demo fetch/classification.
+The suite covers article listing and detail retrieval, duplicate URL protection, deterministic classification, successful and failed authentication, unauthenticated route rejection, authenticated demo fetch/classification, strict live-mode configuration, protected live-mode behavior, provider timestamp normalization, mocked provider ingestion, and live duplicate protection. The repository currently validates with 11 passing tests.
 
 ## Security and data-quality decisions
 
 Authentication credentials are read from environment variables rather than committed source code. The JWT signing secret is also environment-driven, and tokens expire after a configurable interval. The default secret is intended only as a local-development fallback and must be replaced before deployment.
 
-Mutating routes require a bearer token. Article pagination is bounded to prevent unreasonably large reads, and duplicate URLs are ignored during fixture ingestion. No production claim is made for the synthetic demo fixtures or for the keyword fallback classifier.
+Mutating routes require a bearer token. Article pagination is bounded to prevent unreasonably large reads, and duplicate URLs are ignored during both demo and live ingestion. Live provider errors are handled without returning the provider key. No production claim is made for the synthetic demo fixtures or for the keyword fallback classifier.
 
 ## Current limitations
 
-The default classifier is intentionally lightweight and deterministic. The optional Hugging Face zero-shot pipeline requires model downloads and additional compute, so it is disabled unless `ENABLE_HF_CLASSIFIER=true`. Live ingestion depends on NewsAPI, Redis, Celery, and the provider’s quota and availability. The demo authentication layer is suitable for a portfolio demonstration, not for multi-user production identity management.
+The default classifier is intentionally lightweight and deterministic. The optional Hugging Face zero-shot pipeline requires model downloads and additional compute, so it is disabled unless `ENABLE_HF_CLASSIFIER=true`. Live ingestion depends on NewsAPI, Redis, Celery, and the provider’s quota and availability; a live API key is not included in this repository and must be supplied by the operator. The demo authentication layer is suitable for a portfolio demonstration, not for multi-user production identity management.
 
 The application currently focuses on ingestion and classification. It does not yet provide user accounts, persistent task monitoring, model evaluation dashboards, provider failover, or a production migration system such as Alembic.
 

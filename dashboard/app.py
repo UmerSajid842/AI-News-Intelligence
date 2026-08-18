@@ -60,8 +60,10 @@ with st.sidebar:
     st.caption(f"Current ingestion mode: `{NEWS_MODE}`")
     if NEWS_MODE == "demo":
         st.info("Demo mode uses deterministic local fixtures. It does not call a live news provider.")
-    else:
+    elif NEWS_MODE == "live":
         st.warning("Live mode requires NEWS_API_KEY, Celery, Redis, and a running worker.")
+    else:
+        st.error("Invalid NEWS_MODE. Use only 'demo' or 'live'.")
 
     st.subheader("Local demo sign-in")
     username = st.text_input("Username", value=os.getenv("DEMO_USER", ""))

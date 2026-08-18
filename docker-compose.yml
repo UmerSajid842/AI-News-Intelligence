@@ -24,6 +24,7 @@ services:
       - DATABASE_URL=sqlite:////app/news.db
       - REDIS_URL=redis://redis:6379/0
       - AUTHJWT_SECRET_KEY=${AUTHJWT_SECRET_KEY}
+      - JWT_EXPIRE_MINUTES=${JWT_EXPIRE_MINUTES:-60}
       - DEMO_USER=${DEMO_USER}
       - DEMO_PASSWORD=${DEMO_PASSWORD}
       - NEWS_MODE=${NEWS_MODE:-demo}
@@ -45,6 +46,7 @@ services:
       - DATABASE_URL=sqlite:////app/news.db
       - REDIS_URL=redis://redis:6379/0
       - AUTHJWT_SECRET_KEY=${AUTHJWT_SECRET_KEY}
+      - JWT_EXPIRE_MINUTES=${JWT_EXPIRE_MINUTES:-60}
       - DEMO_USER=${DEMO_USER}
       - DEMO_PASSWORD=${DEMO_PASSWORD}
       - NEWS_MODE=${NEWS_MODE:-demo}

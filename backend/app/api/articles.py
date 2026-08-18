@@ -1,5 +1,3 @@
-import os
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -7,7 +5,12 @@ from ..database import SessionLocal
 from ..models import Article
 from ..schemas import ArticleResponse
 from ..security import get_current_user
-from ..worker import fetch_and_process_news
+from ..worker import (
+    LiveNewsConfigurationError,
+    fetch_and_process_news,
+    get_news_mode,
+    validate_live_configuration,
+)
 
 router = APIRouter()
 
@@ -35,12 +38,16 @@ def get_articles(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
 
 @router.post("/fetch")
 def fetch_news(current_user: str = Depends(get_current_user)):
-    """Load deterministic demo articles or queue an optional live-news fetch."""
-    mode = os.getenv("NEWS_MODE", "demo").lower()
-    if mode != "live":
-        from ..services.news_fetcher import fetch_and_store_articles
+    """Load demo articles or queue a validated live-news fetch."""
+    try:
+        mode = get_news_mode()
+        if mode == "demo":
+            from ..services.news_fetcher import fetch_and_store_articles
 
-        return fetch_and_store_articles()
+            return fetch_and_store_articles()
+        validate_live_configuration()
+    except LiveNewsConfigurationError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     result = fetch_and_process_news.delay()
     return {
