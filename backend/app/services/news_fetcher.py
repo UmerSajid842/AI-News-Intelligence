@@ -1,14 +1,16 @@
 from datetime import datetime
-from ..models import Article
+
 from ..database import SessionLocal
+from ..models import Article
 from .classifier import classify_article
 
+
 def fetch_and_store_articles():
-    """Fetches news. Uses dummy data as a fallback when no API key is configured."""
+    """Insert deterministic demo fixtures for local development and portfolio demos."""
     db = SessionLocal()
     saved = 0
 
-    # Sample dummy articles (simulates what NewsAPI would return)
+    # These fixtures are intentionally labeled and do not represent live news.
     dummy_articles = [
         {
             "title": "OpenAI Announces GPT-5 Release Date",
@@ -52,4 +54,8 @@ def fetch_and_store_articles():
 
     db.commit()
     db.close()
-    return {"saved": saved, "message": "Dummy data inserted with AI classification. Set NEWS_API_KEY to fetch real news."}
+    return {
+        "saved": saved,
+        "mode": "demo",
+        "message": "Demo fixtures inserted and classified locally. Live ingestion requires NEWS_MODE=live and NEWS_API_KEY.",
+    }

@@ -1,6 +1,7 @@
-from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+
+from pydantic import BaseModel, ConfigDict
 
 class ArticleBase(BaseModel):
     title: str
@@ -18,5 +19,4 @@ class ArticleResponse(ArticleBase):
     category: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True   # Allows conversion from SQLAlchemy model
+    model_config = ConfigDict(from_attributes=True)

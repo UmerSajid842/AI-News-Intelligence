@@ -23,6 +23,11 @@ services:
     environment:
       - DATABASE_URL=sqlite:////app/news.db
       - REDIS_URL=redis://redis:6379/0
+      - AUTHJWT_SECRET_KEY=${AUTHJWT_SECRET_KEY}
+      - DEMO_USER=${DEMO_USER}
+      - DEMO_PASSWORD=${DEMO_PASSWORD}
+      - NEWS_MODE=${NEWS_MODE:-demo}
+      - NEWS_PROVIDER_URL=${NEWS_PROVIDER_URL:-https://newsapi.org/v2/top-headlines}
       - NEWS_API_KEY=${NEWS_API_KEY}
     depends_on:
       - redis
@@ -39,6 +44,11 @@ services:
     environment:
       - DATABASE_URL=sqlite:////app/news.db
       - REDIS_URL=redis://redis:6379/0
+      - AUTHJWT_SECRET_KEY=${AUTHJWT_SECRET_KEY}
+      - DEMO_USER=${DEMO_USER}
+      - DEMO_PASSWORD=${DEMO_PASSWORD}
+      - NEWS_MODE=${NEWS_MODE:-demo}
+      - NEWS_PROVIDER_URL=${NEWS_PROVIDER_URL:-https://newsapi.org/v2/top-headlines}
       - NEWS_API_KEY=${NEWS_API_KEY}
     depends_on:
       - redis
@@ -55,6 +65,8 @@ services:
       - "8501:8501"
     environment:
       - NEWS_API_URL=http://backend:8000/api/articles
+      - NEWS_MODE=${NEWS_MODE:-demo}
+      - DEMO_USER=${DEMO_USER}
     depends_on:
       - backend
     restart: unless-stopped

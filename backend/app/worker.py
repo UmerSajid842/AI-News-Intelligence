@@ -3,16 +3,16 @@ from datetime import datetime
 
 import requests
 from celery import Celery
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from .database import SessionLocal
 from .models import Article
 from .services.classifier import classify_article
 
-celery_app = Celery(
-    "worker",
-    broker="redis://localhost:6379/0",
-    backend="redis://localhost:6379/0",
-)
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+celery_app = Celery("worker", broker=REDIS_URL, backend=REDIS_URL)
 
 celery_app.autodiscover_tasks(["app"])
 
@@ -44,13 +44,14 @@ def process_article(article_id: int):
 def fetch_and_process_news():
     """Fetch real headlines from NewsAPI and queue AI processing for each article."""
     news_api_key = os.getenv("NEWS_API_KEY")
+    mode = os.getenv("NEWS_MODE", "demo").lower()
 
-    # Fallback to dummy data when no API key is configured
-    if not news_api_key:
+    # Demo mode is the safe, free, deterministic default.
+    if mode != "live" or not news_api_key:
         from .services.news_fetcher import fetch_and_store_articles
         return fetch_and_store_articles()
 
-    url = "https://newsapi.org/v2/top-headlines"
+    url = os.getenv("NEWS_PROVIDER_URL", "https://newsapi.org/v2/top-headlines")
     params = {
         "country": "us",
         "apiKey": news_api_key,
@@ -59,7 +60,7 @@ def fetch_and_process_news():
 
     response = requests.get(url, params=params, timeout=15)
     if response.status_code != 200:
-        return {"error": response.text}
+        return {"error": "News provider request failed", "status_code": response.status_code}
 
     data = response.json()
     articles_data = data.get("articles", [])

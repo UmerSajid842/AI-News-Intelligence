@@ -1,15 +1,11 @@
+import os
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from fastapi_jwt_auth import AuthJWT
 
-from ..security import Settings
+from ..security import create_access_token, get_current_user
 
 router = APIRouter()
-
-
-@AuthJWT.load_config
-def get_config():
-    return Settings()
 
 
 class LoginRequest(BaseModel):
@@ -17,32 +13,32 @@ class LoginRequest(BaseModel):
     password: str
 
 
-# Demo credentials - in production, replace with a real user store
-DEMO_USERS = {
-    "admin": "admin123",
-    "user": "user123",
-}
+def _configured_credentials() -> tuple[str, str]:
+    username = os.getenv("DEMO_USER", "").strip()
+    password = os.getenv("DEMO_PASSWORD", "")
+    if not username or not password:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Demo authentication is not configured. Set DEMO_USER and DEMO_PASSWORD.",
+        )
+    return username, password
 
 
 @router.post("/login")
-def login(request: LoginRequest, authorize: AuthJWT = Depends()):
-    """Authenticate a user and return a JWT access token."""
-    username = request.username
-    password = request.password
-
-    if username not in DEMO_USERS or DEMO_USERS[username] != password:
+def login(request: LoginRequest):
+    """Authenticate the configured local demo user and return a JWT."""
+    configured_username, configured_password = _configured_credentials()
+    if request.username != configured_username or request.password != configured_password:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
 
-    access_token = authorize.create_access_token(subject=username)
+    access_token = create_access_token(subject=request.username)
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.get("/me")
-def get_me(authorize: AuthJWT = Depends()):
+def get_me(current_user: str = Depends(get_current_user)):
     """Return the current authenticated user."""
-    authorize.jwt_required()
-    current_user = authorize.get_jwt_subject()
     return {"username": current_user}

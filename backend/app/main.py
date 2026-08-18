@@ -1,5 +1,9 @@
+from dotenv import load_dotenv
 from fastapi import FastAPI
-from .database import engine, Base
+
+load_dotenv()
+
+from .database import Base, engine
 from .api import articles, auth
 
 # Create database tables (creates news.db file automatically)

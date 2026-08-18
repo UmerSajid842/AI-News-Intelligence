@@ -10,4 +10,5 @@ torch
 streamlit
 celery
 redis
-fastapi-jwt-auth
+PyJWT>=2.8.0
+pytest
